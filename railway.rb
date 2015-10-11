@@ -5,7 +5,6 @@ class Railway
   Route = Struct.new(:stops, :distance)
   TownDetails = Struct.new(:name, :destinations, :weight)
 
-  attr_accessor :cached_routes #TODO don't forget to delete me!
   def initialize(map)
     @towns = Hash.new{|h, name| h[name] = Town.new(name, [])}
     @connections = {}
