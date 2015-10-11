@@ -62,4 +62,23 @@ describe 'Railway' do
       expect(railway.distance "A", "E", "D").to eq "NO SUCH ROUTE"
     end
   end
+
+  describe "#routes_count" do
+    let(:railway) { Railway.new %w[AB5 BC4 CD8 DC8 DE6 AD5 CE2 EB3 AE7] }
+
+    it "should count all possible routes" do
+      expect(railway.routes_count("A", "C")).to eq 2
+    end
+  end
+
+  describe "#shortest_path" do
+    let(:railway) { Railway.new %w[AB5 BC4 CD8 DC8 DE6 AD5 CE2 EB3 AE7] }
+
+    it "should calculate the distance of the shortest path from town to town" do
+      expect(railway.shortest_path "A", "C").to eq 9
+      expect(railway.shortest_path "B", "B").to eq 9
+    end
+
+
+  end
 end
