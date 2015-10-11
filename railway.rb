@@ -20,6 +20,15 @@ class Railway
     "towns: #{@nodes.keys.sort}\ntotal distance: #{@edges.values.reduce(:+)}"
   end
 
+  def distance(*route)
+    route.each_with_index.reduce(0) do |total, (town, i)|
+      next total if i == route.length - 1
+      total += @edges[[town, route[i+1]]]
+    end
+  rescue TypeError
+    "NO SUCH ROUTE"
+  end
+
   private
   def validate_input!(map)
     raise ArgumentError, "input should be enumerable" unless map.kind_of?(Enumerable)

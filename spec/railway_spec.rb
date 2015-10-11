@@ -48,4 +48,18 @@ describe 'Railway' do
     end
   end
 
+  describe "#distance" do
+    let(:railway) { Railway.new %w[AB5 BC4 CD8 DC8 DE6 AD5 CE2 EB3 AE7] }
+
+    it "should calculate distance between towns" do
+      expect(railway.distance "A", "B", "C").to eq 9
+      expect(railway.distance "A", "D").to eq 5
+      expect(railway.distance "A", "D", "C").to eq 13
+      expect(railway.distance "A", "E", "B", "C", "D").to eq 22
+    end
+
+    it "should warn if there is no such direct connection" do
+      expect(railway.distance "A", "E", "D").to eq "NO SUCH ROUTE"
+    end
+  end
 end
