@@ -66,8 +66,16 @@ describe 'Railway' do
   describe "#routes_count" do
     let(:railway) { Railway.new %w[AB5 BC4 CD8 DC8 DE6 AD5 CE2 EB3 AE7] }
 
-    it "should count all possible routes" do
-      expect(railway.routes_count("A", "C")).to eq 2
+    it "should count routes with stops limit" do
+      expect(railway.routes_count("C", "C", max_stops: 3)).to eq 2
+    end
+
+    it "should count routes with exact stops number" do
+      expect(railway.routes_count("A", "C", stops: 4)).to eq 2
+    end
+
+    it "should count routes with distance limit" do
+      expect(railway.routes_count("C", "C", max_distance: 30)).to eq 7
     end
   end
 
@@ -78,7 +86,5 @@ describe 'Railway' do
       expect(railway.shortest_path "A", "C").to eq 9
       expect(railway.shortest_path "B", "B").to eq 9
     end
-
-
   end
 end
