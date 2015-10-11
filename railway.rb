@@ -1,10 +1,11 @@
-require 'pry'
 class Railway
+  NO_ROUTE_MSG = "NO SUCH ROUTE"
+
   Town = Struct.new(:name, :destinations)
   Route = Struct.new(:stops, :distance)
-
   TownDetails = Struct.new(:name, :destinations, :weight)
 
+  attr_accessor :cached_routes #TODO don't forget to delete me!
   def initialize(map)
     @towns = Hash.new{|h, name| h[name] = Town.new(name, [])}
     @connections = {}
@@ -19,29 +20,38 @@ class Railway
     @cached_routes = Hash.new
   end
 
-  def to_s
-    "towns: #{@towns.keys.sort}\ntotal distance: #{@connections.values.reduce(:+)}"
-  end
-
   def distance(*route)
     route.each_with_index.reduce(0) do |total, (town, i)|
       next total if i == route.length - 1
       total += @connections[[town, route[i+1]]]
     end
   rescue TypeError
-    "NO SUCH ROUTE"
+    NO_ROUTE_MSG
   end
 
-  def routes_count(origin, target, condition=nil)
-    count_routes_by_dijkstra(origin)
+  def routes_count(origin, target, conditions)
+    validate_conditions!(conditions)
 
-    @cached_routes[origin][target].count
+    routes = if conditions[:stops]
+      filter_routes_by_exact_stops(routes_for(origin)[target], conditions[:stops])
+    elsif conditions[:max_stops]
+      filter_routes_by_max_stops(routes_for(origin)[target], conditions[:max_stops])
+    else
+      routes_for(origin)[target]
+    end
+    filter_routes_by_max_distance(routes, conditions[:max_distance]).count
   end
 
   def shortest_path(origin, target)
-    count_routes_by_dijkstra(origin)
+    if routes_for(origin)[target].any?
+      routes_for(origin)[target].min_by(&:distance).distance
+    else
+      NO_ROUTE_MSG
+    end
+  end
 
-    @cached_routes[origin][target].min_by(&:distance).distance
+  def to_s
+    "towns: #{@towns.keys.sort}\ntotal distance: #{@connections.values.reduce(:+)}"
   end
 
   private
@@ -56,11 +66,12 @@ class Railway
     end
   end
 
-  def normalize_map(map)
-    return map if map.any?{ |section| !section.is_a?(String) }
-    map.collect do |section|
-     [section.slice!(0), section.slice!(0), section]
-    end
+  def validate_conditions!(conditions)
+    acceptable_conditions = [:stops, :max_stops, :max_distance]
+    raise ArgumentError, "conditions are missing" if conditions.empty?
+    raise ArgumentError, "unacceptable condition" if (conditions.keys - acceptable_conditions).any?
+    raise ArgumentError, "values should be positive numbers" if (conditions.values.any?{ |v| Integer(v) < 0 } rescue true)
+    raise ArgumentError, "stops and max_stops cannot be used simultaneusly" if conditions.has_key?(:stops) && conditions.has_key?(:max_stops)
   end
 
   def count_routes_by_dijkstra(origin)
@@ -93,5 +104,41 @@ class Railway
     end
 
     @cached_routes[origin] = routes
+  end
+
+  def normalize_map(map)
+    return map if map.any?{ |section| !section.is_a?(String) }
+    map.collect do |section|
+     [section.slice!(0), section.slice!(0), section]
+    end
+  end
+
+  def routes_for(origin)
+    count_routes_by_dijkstra(origin)
+    @cached_routes[origin]
+  end
+
+  def filter_routes_by_exact_stops(routes, stops)
+    routes.inject([]) do |filtered, route|
+      filtered << route if route.stops == stops-1
+      filtered
+    end
+  end
+
+  def filter_routes_by_max_stops(routes, stops)
+    routes.inject([]) do |filtered, route|
+      filtered << route if route.stops < stops
+      filtered
+    end
+  end
+
+  def filter_routes_by_max_distance(routes, max_distance)
+    return routes if max_distance.nil?
+    total_distance = 0
+
+    routes.inject([]) do |filtered, route|
+      break filtered if (total_distance += route.distance) > max_distance
+      filtered += [route]
+    end
   end
 end

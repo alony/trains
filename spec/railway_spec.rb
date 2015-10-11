@@ -1,6 +1,7 @@
 require './railway'
 
 describe 'Railway' do
+  let(:railway) { Railway.new %w[AB5 BC4 CD8 DC8 DE6 AD5 CE2 EB3 AE7] }
 
   describe "initialization" do
     it "should create a map" do
@@ -49,8 +50,6 @@ describe 'Railway' do
   end
 
   describe "#distance" do
-    let(:railway) { Railway.new %w[AB5 BC4 CD8 DC8 DE6 AD5 CE2 EB3 AE7] }
-
     it "should calculate distance between towns" do
       expect(railway.distance "A", "B", "C").to eq 9
       expect(railway.distance "A", "D").to eq 5
@@ -64,27 +63,47 @@ describe 'Railway' do
   end
 
   describe "#routes_count" do
-    let(:railway) { Railway.new %w[AB5 BC4 CD8 DC8 DE6 AD5 CE2 EB3 AE7] }
-
     it "should count routes with stops limit" do
       expect(railway.routes_count("C", "C", max_stops: 3)).to eq 2
     end
 
     it "should count routes with exact stops number" do
-      expect(railway.routes_count("A", "C", stops: 4)).to eq 2
+      expect(railway.routes_count("A", "C", stops: 2)).to eq 2
     end
 
     it "should count routes with distance limit" do
-      expect(railway.routes_count("C", "C", max_distance: 30)).to eq 7
+      expect(railway.routes_count("C", "C", max_distance: 30)).to eq 2
+    end
+
+    it "should accept only :stops, :max_stops and :distance keys" do
+      expect(->{ railway.routes_count("C", "C", stops: 5, unknown_param: 2) }).to raise_exception(ArgumentError, "unacceptable condition")
+    end
+
+    it "should not accept negative condition values" do
+      expect(->{ railway.routes_count("C", "C", stops: -4) }).to raise_exception(ArgumentError, "values should be positive numbers")
+    end
+
+    it "should accept only numeric condition values" do
+      expect(->{ railway.routes_count("C", "C", stops: "#") }).to raise_exception(ArgumentError, "values should be positive numbers")
+    end
+
+    it "should not accept :stops and :max_stops at once" do
+      expect(->{ railway.routes_count("C", "C", {stops: 1, max_stops: 5}) }).to raise_exception(ArgumentError, "stops and max_stops cannot be used simultaneusly")
+    end
+
+    it "should not accept empty conditions" do
+      expect(->{ railway.routes_count("C", "C", {}) }).to raise_exception(ArgumentError, "conditions are missing")
     end
   end
 
   describe "#shortest_path" do
-    let(:railway) { Railway.new %w[AB5 BC4 CD8 DC8 DE6 AD5 CE2 EB3 AE7] }
-
     it "should calculate the distance of the shortest path from town to town" do
       expect(railway.shortest_path "A", "C").to eq 9
       expect(railway.shortest_path "B", "B").to eq 9
+    end
+
+    it "should warn, if no route exists" do
+      expect(railway.shortest_path("C", "A")).to eq "NO SUCH ROUTE"
     end
   end
 end
